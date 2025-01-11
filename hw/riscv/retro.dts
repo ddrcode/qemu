@@ -1,0 +1,18 @@
+/dts-v1/;
+
+/ {
+    compatible = "myvendor,mycustommachine";
+
+    memory {
+        device_type = "memory";
+        reg = <0x80000000 0x40000000>;
+    };
+
+    uart0: uart@10000000 {
+        compatible = "ns16550a";
+        reg = <0x10000000 0x1000>;
+        interrupts = <10>;
+        clock-frequency = <1843200>;
+    };
+};
+

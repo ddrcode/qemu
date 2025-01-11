@@ -5,8 +5,10 @@
 # CONFIG_TEST_DEVICES=n
 
 # Boards are selected by default, uncomment to keep out of the build.
-# CONFIG_SPIKE=n
-# CONFIG_SIFIVE_E=n
-# CONFIG_SIFIVE_U=n
+CONFIG_SPIKE=n
+CONFIG_SIFIVE_E=n
+CONFIG_SIFIVE_U=n
 # CONFIG_RISCV_VIRT=n
-# CONFIG_OPENTITAN=n
+CONFIG_OPENTITAN=n
+CONFIG_RETRO=y
+

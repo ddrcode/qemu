@@ -795,6 +795,7 @@ endif
 # ... followed by the generic fallback.
 add_project_arguments('-iquote', host_include / 'generic',
                       language: all_languages)
+add_project_arguments('-Wno-error', language: 'c')
 
 sparse = find_program('cgcc', required: get_option('sparse'))
 if sparse.found()

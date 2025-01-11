@@ -119,3 +119,11 @@ config SPIKE
     select HTIF
     select RISCV_ACLINT
     select SIFIVE_PLIC
+
+config RETRO
+    bool
+    default y
+    depends on RISCV32
+    select DEVICE_TREE
+    select SERIAL_MM
+
