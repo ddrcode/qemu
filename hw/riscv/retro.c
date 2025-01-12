@@ -40,6 +40,15 @@
 
 static void retro_init(MachineState *machine)
 {
+    RISCVMachineState *riscv = RISCV_MACHINE(machine);
+    MemoryRegion *ram = g_new(MemoryRegion, 1);
+
+    // Initialize the RAM memory region
+    memory_region_init_ram(ram, NULL, "ram", machine->ram_size, &error_fatal);
+    memory_region_add_subregion(get_system_memory(), 0x80000000, ram);
+
+    // Optionally store RAM in the machine state for future use
+    riscv->ram = ram;
 //   RISCVCPU *cpu = RISCV_CPU(cpu_create(machine->cpu_type));
 //   riscv_add_cpu(cpu, machine);  // Ensure this function is correctly called
 //   memory_region_allocate(get_system_memory(), 0x80000000, 0x100000);  // Example memory allocation
@@ -51,6 +60,7 @@ static void retro_machine_init(MachineClass *mc) {
     mc->max_cpus = 1;
     mc->is_default = true;
     mc->default_ram_id = "ram";
+    mc->default_ram_size = 16 * MiB;
 }
 
 DEFINE_MACHINE("retro", retro_machine_init)
