@@ -28,6 +28,9 @@ typedef struct RetroState {
     RetroCpuSoCState soc;
 } RetroState;
 
-
+enum {
+    RETRO_DEV_SOC_ROM,
+    RETRO_DEV_RAM
+};
 
 #endif

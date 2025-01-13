@@ -12,51 +12,28 @@
 #include "hw/riscv/retro.h"
 #include "hw/misc/cia6526.h"
 
+static const MemMapEntry retro_memmap[] = {
+    [RETRO_DEV_SOC_ROM] =            {  0x01000000,  0x8000      },
+    [RETRO_DEV_RAM] =                {  0x00000000,  0x10000     },
+};
+
 static void retro_init(MachineState *machine)
 {
-    if (machine->cpu_type == NULL) {
-        error_report("No CPU type specified for the machine");
-        exit(1);
-    }
+    MachineClass *mc = MACHINE_GET_CLASS(machine);
+    RetroState *s = RETRO_MACHINE(machine);
+    MemoryRegion *sys_mem = get_system_memory();
+
+    object_initialize_child(OBJECT(machine), "soc", &s->soc, TYPE_RETRO_CPU_SOC);
+    qdev_realize(DEVICE(&s->soc), NULL, &error_fatal);
 
     MemoryRegion *ram = g_new(MemoryRegion, 1);
 
-    // Initialize the RAM memory region
     memory_region_init_ram(ram, NULL, "ram", 0x10000, &error_fatal);
     memory_region_add_subregion(get_system_memory(), 0, ram);
+    // memory_region_add_subregion(sys_mem, retro_memmap[RETRO_DEV_RAM].base, machine->ram);
 
-    // MemoryRegion *cpu_ram = g_new(MemoryRegion, 2);
-    // memory_region_init_ram(ram, NULL, "cpu_ram", 0x10000, &error_fatal);
-    // memory_region_add_subregion(get_system_memory(), 0x010000, cpu_ram);
-
-    // Optionally store RAM in the machine state for future use
     machine->ram = ram;
 
-    // Create and initialize the hart array
-    // Object *hart_array = object_new(TYPE_RISCV_HART_ARRAY);
-    // object_property_set_int(hart_array, "num-harts", machine->smp.cpus, &error_abort);
-    // object_property_set_str(hart_array, "cpu-type", machine->cpu_type, &error_abort);
-    // object_property_add_child(OBJECT(machine), "hart-array", hart_array);
-
-    //RISCVCPU *cpu = RISCV_CPU(object_property_get_link(hart_array, "cpu[*]", NULL));
-    // qemu_init_vcpu(CPU(hart_array));
-    // cpu_address_space_init(CPU(hart_array), 0, "cpu-ram", ram);
-    // if (!cpu) {
-    //     error_report("Failed to create CPU");
-    //     exit(1);
-    // }
-    
-
-    // Explicitly set the satp mode to 'bare' (no address translation)
-   // cpu->env.satp = 0;
-
-    // Add the CPU to the machine
-    //object_property_add_child(OBJECT(machine), "cpu[*]", OBJECT(cpu));
-    // object_property_set_str(OBJECT(cpu), "cpu-type", machine->cpu_type, &error_abort);
-    // object_property_set_int(OBJECT(cpu), "num-harts", 1, &error_abort);
-    
-    // RetroState *state = RETRO_MACHINE(machine);
-    // object_initialize_child(OBJECT(machine), "cpus", &state->cpus, TYPE_RISCV_HART_ARRAY);
 
 }
 
