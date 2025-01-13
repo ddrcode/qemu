@@ -14,6 +14,8 @@ typedef struct RetroCpuSoCState {
 
     /*< public >*/
     RISCVHartArrayState cpus;
+    MemoryRegion ram;
+    MemoryRegion rom;
 } RetroCpuSoCState;
 
 
@@ -29,8 +31,10 @@ typedef struct RetroState {
 } RetroState;
 
 enum {
-    RETRO_DEV_SOC_ROM,
-    RETRO_DEV_RAM
+    RETRO_MEM_RAM,
+    RETRO_MEM_SOC_RAM,
+    RETRO_MEM_SOC_ROM,
+    RETRO_MEM_UART0
 };
 
 #endif

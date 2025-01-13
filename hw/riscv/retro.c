@@ -14,8 +14,10 @@
 #include "hw/misc/cia6526.h"
 
 static const MemMapEntry retro_memmap[] = {
-    [RETRO_DEV_SOC_ROM] =            {  0x01000000,  0x8000      },
-    [RETRO_DEV_RAM] =                {  0x00000000,  0x10000     },
+    [RETRO_MEM_RAM] =                {  0x00000000,  0x10000     },
+    [RETRO_MEM_SOC_RAM] =            {  0x01000000,  0x8000      },
+    [RETRO_MEM_SOC_ROM] =            {  0x01100000,  0x8000      },
+    [RETRO_MEM_UART0] =              {  0x10000000,  0x100       },
 };
 
 static void retro_init(MachineState *machine)
@@ -34,27 +36,25 @@ static void retro_init(MachineState *machine)
     object_initialize_child(OBJECT(machine), "soc", &s->soc, TYPE_RETRO_CPU_SOC);
     qdev_realize(DEVICE(&s->soc), NULL, &error_fatal);
 
-   //MemoryRegion *ram = g_new(MemoryRegion, 1);
-    memory_region_init_ram(sys_mem, OBJECT(&s->soc), "ram", retro_memmap[RETRO_DEV_RAM].size, &error_fatal);
-    memory_region_add_subregion(sys_mem, retro_memmap[RETRO_DEV_RAM].base, machine->ram);
-    // machine->ram = ram;
-    
-    // memory_region_add_subregion(sys_mem, retro_memmap[RETRO_DEV_RAM].base, machine->ram);
-    // memory_region_add_subregion(sys_mem, 0, machine->ram);
-
-
+    memory_region_init_ram(machine->ram, OBJECT(&s->soc), "ram", retro_memmap[RETRO_MEM_RAM].size, &error_fatal);
+    memory_region_add_subregion(sys_mem, retro_memmap[RETRO_MEM_RAM].base, machine->ram);
 
 }
 
 static void retro_cpu_soc_realize(DeviceState *dev, Error **errp) {
     MachineState *ms = MACHINE(qdev_get_machine());
     RetroCpuSoCState *s = RETRO_CPU_SOC(dev);
-    // MemoryRegion *sys_mem = get_system_memory();
-    // const MemMapEntry *memmap = retro_memmap;
+    MemoryRegion *sys_mem = get_system_memory();
 
     object_property_set_str(OBJECT(&s->cpus), "cpu-type", ms->cpu_type, &error_abort);
     object_property_set_int(OBJECT(&s->cpus), "num-harts", 1 /* ms->smp.cpus */, &error_abort); // FIXME: hardcoded to 1
     sysbus_realize(SYS_BUS_DEVICE(&s->cpus), &error_fatal);
+    
+    memory_region_init_ram(&s->ram, OBJECT(dev), "soc.ram", retro_memmap[RETRO_MEM_SOC_RAM].size, &error_fatal);
+    memory_region_add_subregion(sys_mem, retro_memmap[RETRO_MEM_SOC_RAM].base, &s->ram);
+    
+    memory_region_init_rom(&s->rom, OBJECT(dev), "soc.rom", retro_memmap[RETRO_MEM_SOC_ROM].size, &error_fatal);
+    memory_region_add_subregion(sys_mem, retro_memmap[RETRO_MEM_SOC_ROM].base, &s->rom);
 }
 
 static void retro_cpu_soc_init(Object *obj) {
@@ -77,7 +77,7 @@ static void retro_machine_class_init(ObjectClass *oc, void *data) {
     mc->is_default = true;
     mc->default_cpu_type = TYPE_RISCV_CPU_RV32E;
     mc->default_ram_id = "default_ram";
-    mc->default_ram_size = retro_memmap[RETRO_DEV_RAM].size;
+    mc->default_ram_size = retro_memmap[RETRO_MEM_RAM].size;
 }
 
 static const TypeInfo retro_machine_types[] = {
