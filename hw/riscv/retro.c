@@ -1,5 +1,6 @@
 #include "qemu/osdep.h"
 #include "qemu/units.h"
+#include "qemu/cutils.h"
 #include "qemu/error-report.h"
 #include "qapi/error.h"
 #include "hw/boards.h"
@@ -22,17 +23,25 @@ static void retro_init(MachineState *machine)
     MachineClass *mc = MACHINE_GET_CLASS(machine);
     RetroState *s = RETRO_MACHINE(machine);
     MemoryRegion *sys_mem = get_system_memory();
+    
+    if (machine->ram_size != mc->default_ram_size) {
+        char *sz = size_to_str(mc->default_ram_size);
+        error_report("Invalid RAM size, should be %s", sz);
+        g_free(sz);
+        exit(EXIT_FAILURE);
+    }
 
     object_initialize_child(OBJECT(machine), "soc", &s->soc, TYPE_RETRO_CPU_SOC);
     qdev_realize(DEVICE(&s->soc), NULL, &error_fatal);
 
-    MemoryRegion *ram = g_new(MemoryRegion, 1);
-
-    memory_region_init_ram(ram, NULL, "ram", 0x10000, &error_fatal);
-    memory_region_add_subregion(get_system_memory(), 0, ram);
+   //MemoryRegion *ram = g_new(MemoryRegion, 1);
+    memory_region_init_ram(sys_mem, OBJECT(&s->soc), "ram", retro_memmap[RETRO_DEV_RAM].size, &error_fatal);
+    memory_region_add_subregion(sys_mem, retro_memmap[RETRO_DEV_RAM].base, machine->ram);
+    // machine->ram = ram;
+    
     // memory_region_add_subregion(sys_mem, retro_memmap[RETRO_DEV_RAM].base, machine->ram);
+    // memory_region_add_subregion(sys_mem, 0, machine->ram);
 
-    machine->ram = ram;
 
 
 }
@@ -44,13 +53,8 @@ static void retro_cpu_soc_realize(DeviceState *dev, Error **errp) {
     // const MemMapEntry *memmap = retro_memmap;
 
     object_property_set_str(OBJECT(&s->cpus), "cpu-type", ms->cpu_type, &error_abort);
-    object_property_set_int(OBJECT(&s->cpus), "num-harts", ms->smp.cpus, &error_abort);
+    object_property_set_int(OBJECT(&s->cpus), "num-harts", 1 /* ms->smp.cpus */, &error_abort); // FIXME: hardcoded to 1
     sysbus_realize(SYS_BUS_DEVICE(&s->cpus), &error_fatal);
-    //
-    // MemoryRegion *ram = g_new(MemoryRegion, 1);
-    // memory_region_init_ram(ram, OBJECT(dev), "ram", 0x10000, &error_fatal);
-    // memory_region_add_subregion(sys_mem, 0, ram);
-    // machine->ram = ram;
 }
 
 static void retro_cpu_soc_init(Object *obj) {
@@ -72,8 +76,8 @@ static void retro_machine_class_init(ObjectClass *oc, void *data) {
     mc->default_cpus = 1;
     mc->is_default = true;
     mc->default_cpu_type = TYPE_RISCV_CPU_RV32E;
-    // mc->default_ram_id = "default_ram";
-    mc->default_ram_size = 16 * MiB;
+    mc->default_ram_id = "default_ram";
+    mc->default_ram_size = retro_memmap[RETRO_DEV_RAM].size;
 }
 
 static const TypeInfo retro_machine_types[] = {
