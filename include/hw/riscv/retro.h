@@ -4,6 +4,7 @@
 #include "hw/riscv/riscv_hart.h"
 #include "hw/boards.h"
 #include "qom/object.h"
+#include "hw/char/serial.h"
 
 #define TYPE_RETRO_CPU_SOC "riscv.retro.cpu-soc"
 OBJECT_DECLARE_SIMPLE_TYPE(RetroCpuSoCState, RETRO_CPU_SOC)
@@ -14,6 +15,8 @@ typedef struct RetroCpuSoCState {
 
     /*< public >*/
     RISCVHartArrayState cpus;
+    SerialState uart;
+
     MemoryRegion ram;
     MemoryRegion rom;
 } RetroCpuSoCState;

@@ -9,6 +9,7 @@
 #include "target/riscv/cpu.h"
 #include "hw/riscv/riscv_hart.h"
 #include "hw/riscv/boot.h"
+#include "system/system.h"
 
 #include "hw/riscv/retro.h"
 #include "hw/misc/cia6526.h"
@@ -55,16 +56,26 @@ static void retro_cpu_soc_realize(DeviceState *dev, Error **errp) {
     
     memory_region_init_rom(&s->rom, OBJECT(dev), "soc.rom", retro_memmap[RETRO_MEM_SOC_ROM].size, &error_fatal);
     memory_region_add_subregion(sys_mem, retro_memmap[RETRO_MEM_SOC_ROM].base, &s->rom);
+    
+    // DeviceState *uart = qdev_new(TYPE_SERIAL);
+    // qdev_prop_set_chr(uart, "chardev", serial_hd(0));
+    // sysbus_realize_and_unref(SYS_BUS_DEVICE(uart), &error_fatal); //???
+    // if (!sysbus_realize(SYS_BUS_DEVICE(uart), errp)) {
+    //     return;
+    // }
+    // sysbus_mmio_map(SYS_BUS_DEVICE(uart), 0, retro_memmap[RETRO_MEM_UART0].base);
 }
 
 static void retro_cpu_soc_init(Object *obj) {
     RetroCpuSoCState *s = RETRO_CPU_SOC(obj);
     object_initialize_child(obj, "cpus", &s->cpus, TYPE_RISCV_HART_ARRAY);
+    // object_initialize_child(obj, "uart", &s->uart, TYPE_SERIAL);
 }
 
 static void retro_cpu_soc_class_init(ObjectClass *oc, void *data) {
     DeviceClass *dc = DEVICE_CLASS(oc);
     dc->realize = retro_cpu_soc_realize;
+    dc->user_creatable = false;
 }
 
 static void retro_machine_class_init(ObjectClass *oc, void *data) {
