@@ -26,6 +26,7 @@ static void retro_init(MachineState *machine)
     MachineClass *mc = MACHINE_GET_CLASS(machine);
     RetroState *s = RETRO_MACHINE(machine);
     MemoryRegion *sys_mem = get_system_memory();
+    RISCVBootInfo boot_info;
     
     if (machine->ram_size != mc->default_ram_size) {
         char *sz = size_to_str(mc->default_ram_size);
@@ -39,7 +40,16 @@ static void retro_init(MachineState *machine)
 
     memory_region_init_ram(machine->ram, OBJECT(&s->soc), "ram", retro_memmap[RETRO_MEM_RAM].size, &error_fatal);
     memory_region_add_subregion(sys_mem, retro_memmap[RETRO_MEM_RAM].base, machine->ram);
-
+    
+    if (machine->firmware) {
+        hwaddr firmware_load_addr = retro_memmap[RETRO_MEM_RAM].base;
+        riscv_load_firmware(machine->firmware, &firmware_load_addr, NULL);
+    }
+    if (machine->kernel_filename) {
+        error_report("Invalid RAM size, should be ROM");
+    }
+    
+    riscv_boot_info_init(&boot_info, &s->soc.cpus);
 }
 
 static void retro_cpu_soc_realize(DeviceState *dev, Error **errp) {
@@ -49,6 +59,7 @@ static void retro_cpu_soc_realize(DeviceState *dev, Error **errp) {
 
     object_property_set_str(OBJECT(&s->cpus), "cpu-type", ms->cpu_type, &error_abort);
     object_property_set_int(OBJECT(&s->cpus), "num-harts", 1 /* ms->smp.cpus */, &error_abort); // FIXME: hardcoded to 1
+    object_property_set_int(OBJECT(&s->cpus), "resetvec", s->resetvec, &error_abort);
     sysbus_realize(SYS_BUS_DEVICE(&s->cpus), &error_fatal);
     
     memory_region_init_ram(&s->ram, OBJECT(dev), "soc.ram", retro_memmap[RETRO_MEM_SOC_RAM].size, &error_fatal);
@@ -72,8 +83,13 @@ static void retro_cpu_soc_init(Object *obj) {
     // object_initialize_child(obj, "uart", &s->uart, TYPE_SERIAL);
 }
 
+static const Property retro_soc_props[] = {
+    DEFINE_PROP_UINT32("resetvec", RetroCpuSoCState, resetvec, 0x0),
+};
+
 static void retro_cpu_soc_class_init(ObjectClass *oc, void *data) {
     DeviceClass *dc = DEVICE_CLASS(oc);
+    device_class_set_props(dc, retro_soc_props);
     dc->realize = retro_cpu_soc_realize;
     dc->user_creatable = false;
 }

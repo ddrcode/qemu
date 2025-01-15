@@ -19,6 +19,8 @@ typedef struct RetroCpuSoCState {
 
     MemoryRegion ram;
     MemoryRegion rom;
+    
+    uint32_t resetvec;
 } RetroCpuSoCState;
 
 
